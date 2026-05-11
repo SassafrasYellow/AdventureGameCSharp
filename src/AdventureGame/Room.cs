@@ -12,7 +12,7 @@ public class Room
 	private bool hasEast;
 	private bool hasWest;
 
-	private string description;
+	private string description = string.Empty;
 
 	public Room()
 	{

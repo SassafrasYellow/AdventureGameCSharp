@@ -11,14 +11,14 @@ public class AdventureGame
 	public readonly string OPEN_CHEST = "O";
 	public readonly string QUIT = "Q";
 
-	private Adventurer adventurer;
-	private Room[,] dungeon;
+	private Adventurer adventurer = default!;
+	private Room[,] dungeon = default!;
 	private int aRow;
 	private int aCol;
 	private bool isChestOpen;
 	private bool hasPlayerQuit;
 	private bool isAdventureAlive;
-	private string lastDirection;
+	private string lastDirection = default!;
 
 	public AdventureGame()
 	{
