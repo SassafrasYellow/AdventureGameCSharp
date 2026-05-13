@@ -16,6 +16,8 @@ public class AdventureGame
 	private const char Wall = '#';
 	private int aRow;
 	private int aCol;
+	private int grueRow;
+	private int grueCol;
 	private bool isChestOpen;
 	private bool hasPlayerQuit;
 	private bool isAdventureAlive;
@@ -59,40 +61,12 @@ public class AdventureGame
 	{
 		adventurer = new Adventurer();
 
-		Room r1 = new Room();
-		r1.SetLit(true);
-		r1.SetDescription("Room 1");
-		r1.SetSouth(true);
-		r1.SetEast(true);
-		r1.SetLamp(true);
-		r1.SetKey(true);
-
-		Room r2 = new Room();
-		r2.SetDescription("Room 2");
-		r2.SetSouth(true);
-		r2.SetWest(true);
-
-		Room r3 = new Room();
-		r3.SetLit(true);
-		r3.SetDescription("Room 3");
-		r3.SetNorth(true);
-		r3.SetEast(true);
-		r3.SetChest(true);
-
-
-		Room r4 = new Room();
-		r4.SetDescription("Room 4");
-		r4.SetNorth(true);
-		r4.SetWest(true);
-
-		dungeon = new Room[,]
-		{
-			{ r1, r2 },
-			{ r3, r4 }
-		};
+		 dungeon = Load("DungeonTemplate.txt");
 
 		aRow = 1;
 		aCol = 0;
+		grueRow = 7;
+		grueCol = 5;
 
 		isChestOpen = false;
 		hasPlayerQuit = false;
@@ -108,6 +82,7 @@ public class AdventureGame
 
 	private void ShowScene()
 	{
+		PrintDungeonMap();
 		var r = dungeon[aRow, aCol];
 
 		if(adventurer.HasLamp() || r.IsLit())
@@ -152,12 +127,7 @@ public class AdventureGame
 	{
 		Room r = dungeon[aRow, aCol];
 
-		if(!adventurer.HasLamp() && !r.IsLit() && input != lastDirection)
-		{
-			Console.WriteLine("You got eaten alive by the Grue!");
-			isAdventureAlive = false;
-		}
-		else if(input == GO_NORTH)
+		if(input == GO_NORTH)
 		{
 			GoNorth(r);
 		}
@@ -193,7 +163,13 @@ public class AdventureGame
 
 	private void UpdateGameState()
 	{
+	MoveGrue();
 
+    if(grueRow == aRow && grueCol == aCol)
+    {
+        Console.WriteLine("The Grue catches and devours you!");
+        isAdventureAlive = false;
+    }
 	}
 
 	private bool IsGameOver()
@@ -371,9 +347,9 @@ public class AdventureGame
 		for (int i = 0; i < traversableTiles.Count; i++)
 		{
 			string[] parts = lines[descriptionsStart + i].Split('|', 2);
-
-			if (parts.Length != 2)
-				throw new FormatException($"Invalid room description line: {lines[descriptionsStart + i]}");
+			Console.WriteLine(lines[descriptionsStart + i]);
+				if (parts.Length != 2)
+					throw new FormatException($"Invalid room description line: {lines[descriptionsStart + i]}");
 
 			bool isLit = parts[0] switch
 			{
@@ -419,4 +395,137 @@ public class AdventureGame
 		if (!IsTraversable(dungeon, row, col))
 			throw new FormatException($"The {name} position must be on a traversable tile.");
 	}
+
+	//This is the A* method. It's used for controlling the movement of the grue.
+
+	private void MoveGrue()
+{
+    (int row, int col) start = (grueRow, grueCol);
+    (int row, int col) goal = (aRow, aCol);
+
+    PriorityQueue<(int row, int col), int> openSet = new();
+
+    Dictionary<(int, int), (int, int)> cameFrom = new();
+
+    Dictionary<(int, int), int> gScore = new();
+    Dictionary<(int, int), int> fScore = new();
+
+    gScore[start] = 0;
+    fScore[start] = Heuristic(start, goal);
+
+    openSet.Enqueue(start, fScore[start]);
+
+    int[] dRows = { -1, 1, 0, 0 };
+    int[] dCols = { 0, 0, -1, 1 };
+
+    while(openSet.Count > 0)
+    {
+        var current = openSet.Dequeue();
+
+        if(current == goal)
+        {
+            ReconstructPath(cameFrom, current);
+            return;
+        }
+
+        for(int i = 0; i < 4; i++)
+        {
+            int newRow = current.row + dRows[i];
+            int newCol = current.col + dCols[i];
+
+            bool valid =
+                newRow >= 0 &&
+                newRow < dungeon.GetLength(0) &&
+                newCol >= 0 &&
+                newCol < dungeon.GetLength(1) &&
+                dungeon[newRow, newCol] != null;
+
+            if(!valid)
+                continue;
+
+            var neighbor = (newRow, newCol);
+
+            int tentativeGScore = gScore[current] + 1;
+
+            if(!gScore.ContainsKey(neighbor) || tentativeGScore < gScore[neighbor])
+            {
+                cameFrom[neighbor] = current;
+
+                gScore[neighbor] = tentativeGScore;
+
+                fScore[neighbor] =
+                    tentativeGScore + Heuristic(neighbor, goal);
+
+                openSet.Enqueue(neighbor, fScore[neighbor]);
+            }
+        }
+    }
+}
+private int Heuristic((int row, int col) a, (int row, int col) b)
+{
+    return Math.Abs(a.row - b.row)
+         + Math.Abs(a.col - b.col);
+}
+private void ReconstructPath(
+    Dictionary<(int, int), (int, int)> cameFrom,
+    (int row, int col) current)
+{
+    List<(int row, int col)> path = new();
+
+    path.Add(current);
+
+    while(cameFrom.ContainsKey(current))
+    {
+        current = cameFrom[current];
+        path.Add(current);
+    }
+
+    path.Reverse();
+
+    if(path.Count > 1)
+    {
+        grueRow = path[1].row;
+        grueCol = path[1].col;
+    }
+}
+//Shows Dungeon map
+private void PrintDungeonMap()
+{
+    for(int row = 0; row < dungeon.GetLength(0); row++)
+    {
+        for(int col = 0; col < dungeon.GetLength(1); col++)
+        {
+            if(aRow == row && aCol == col)
+            {
+                Console.Write('P');
+            }
+            else if(grueRow == row && grueCol == col)
+            {
+                Console.Write('G');
+            }
+            else if(dungeon[row, col] == null)
+            {
+                Console.Write('#');
+            }
+            else if(dungeon[row, col].HasLamp())
+            {
+                Console.Write('L');
+            }
+            else if(dungeon[row, col].HasKey())
+            {
+                Console.Write('K');
+            }
+            else if(dungeon[row, col].HasChest())
+            {
+                Console.Write('C');
+            }
+            else
+            {
+                Console.Write('.');
+            }
+        }
+
+        Console.WriteLine();
+    }
+}
 }
