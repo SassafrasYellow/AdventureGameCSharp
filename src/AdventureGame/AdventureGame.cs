@@ -1,3 +1,5 @@
+
+
 namespace AdventureGame;
 
 public class AdventureGame
@@ -64,9 +66,9 @@ public class AdventureGame
 		 dungeon = Load("DungeonTemplate.txt");
 
 		aRow = 1;
-		aCol = 0;
-		grueRow = 7;
-		grueCol = 5;
+		aCol = 1;
+		grueRow = 5;
+		grueCol = 8;
 
 		isChestOpen = false;
 		hasPlayerQuit = false;
@@ -77,7 +79,12 @@ public class AdventureGame
 
 	private void ShowGameStartScreen()
 	{
-		Console.WriteLine("Welcome to Adventure Game!");
+	Console.Clear();
+    Console.WriteLine("============================");
+    Console.WriteLine(" Welcome to Adventure Game! ");
+    Console.WriteLine("============================");
+    Console.WriteLine("Press any key to begin...");
+    Console.ReadKey();
 	}
 
 	private void ShowScene()
@@ -170,16 +177,35 @@ public class AdventureGame
         Console.WriteLine("The Grue catches and devours you!");
         isAdventureAlive = false;
     }
+    
+    if(isChestOpen && aRow != 4 && aCol != 8)
+    {
+        Console.WriteLine("You have the treasure! Now get to the EXIT!");
+    }
 	}
 
 	private bool IsGameOver()
 	{
-		return isChestOpen || hasPlayerQuit || !isAdventureAlive;
-	}
+    bool hasReachedExit = (aRow == 4 && aCol == 8); // Matches your file's exitRow/exitCol
+    bool playerWon = isChestOpen && hasReachedExit;
+
+    return playerWon || hasPlayerQuit || !isAdventureAlive;
+}
 
 	private void ShowGameOverScreen()
 	{
-		Console.WriteLine("Game Over!");
+		if (isChestOpen && aRow == 4 && aCol == 8)
+    {
+        Console.WriteLine("CONGRATULATIONS! You escaped the dungeon with the treasure!");
+    }
+    else if (!isAdventureAlive)
+    {
+        Console.WriteLine("GAME OVER: You were eaten by a Grue.");
+    }
+    else
+    {
+        Console.WriteLine("You quit the game. Coward!");
+    }
 	}
 
 	private void GoNorth(Room r)
@@ -292,8 +318,7 @@ public class AdventureGame
 	
 	public Room[,] Load(string filePath)
 	{
-		string[] lines = File.ReadAllLines("C:\\Users\\siriu\\OneDrive\\Documents\\GitHub\\AdventureGameCSharpJorge\\AdventureGameCSharp\\res\\DungeonTemplate.txt"
-);
+		string[] lines = File.ReadAllLines("AdventureGame\\DungeonTemplate.txt");
 
 		int rows = int.Parse(lines[0]);
 		int cols = int.Parse(lines[1]);
@@ -308,9 +333,8 @@ public class AdventureGame
 		int chestCol = int.Parse(lines[9]);
 
 		// lines[10] and lines[11] are grueRow/grueCol if needed elsewhere
-
 		int layoutStart = 12;
-		int descriptionsStart = layoutStart + rows;
+		int descriptionsStart = layoutStart + rows +1;
 
 		if (lines.Length < descriptionsStart)
 			throw new FormatException("File does not contain enough layout rows.");
@@ -519,6 +543,10 @@ private void PrintDungeonMap()
             {
                 Console.Write('C');
             }
+			else if(row == 4 && col == 8)
+			{
+    		Console.Write('E');
+			}
             else
             {
                 Console.Write('.');
