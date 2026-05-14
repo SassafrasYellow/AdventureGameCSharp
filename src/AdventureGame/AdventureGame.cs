@@ -1,559 +1,318 @@
-
-
 namespace AdventureGame;
 
 public class AdventureGame
 {
-	public readonly string GO_NORTH = "W";
-	public readonly string GO_SOUTH = "S";
-	public readonly string GO_EAST = "D";
-	public readonly string GO_WEST = "A";
-	public readonly string GET_LAMP = "L";
-	public readonly string GET_KEY = "K";
-	public readonly string OPEN_CHEST = "O";
-	public readonly string QUIT = "Q";
+    public readonly string GO_NORTH = "W";
+    public readonly string GO_SOUTH = "S";
+    public readonly string GO_EAST = "D";
+    public readonly string GO_WEST = "A";
+    public readonly string GET_LAMP = "L";
+    public readonly string GET_KEY = "K";
+    public readonly string OPEN_CHEST = "O";
+    public readonly string QUIT = "Q";
 
-	private Adventurer adventurer = default!;
-	private Room[,] dungeon = default!;
-	private const char Wall = '#';
-	private int aRow;
-	private int aCol;
-	private int grueRow;
-	private int grueCol;
-	private bool isChestOpen;
-	private bool hasPlayerQuit;
-	private bool isAdventureAlive;
-	private string lastDirection = default!;
+    private Adventurer adventurer = default!;
+    private Room[,] dungeon = default!;
+    private const char Wall = '#';
+    private int aRow;
+    private int aCol;
+    private int grueRow;
+    private int grueCol;
+    private bool isChestOpen;
+    private bool hasPlayerQuit;
+    private bool isAdventureAlive;
+    private string statusMessage = ""; // Added status message
+    private string lastDirection = default!;
 
-	public AdventureGame()
-	{
+    public AdventureGame() { }
 
-	}
-
-	public void Start()
-	{
-		Init();
-
-		ShowGameStartScreen();
-
-		string input;
-
-		do
-		{
-			ShowScene();
-
-			do
-			{
-				ShowInputOptions();
-
-				input = GetInput();
-			}
-			while(!IsValidInput(input));
-
-			ProcessInput(input);
-
-			UpdateGameState();
-		}
-		while(!IsGameOver());
-
-		ShowGameOverScreen();
-	}
-
-	private void Init()
-	{
-		adventurer = new Adventurer();
-
-		 dungeon = Load("DungeonTemplate.txt");
-
-		aRow = 1;
-		aCol = 1;
-		grueRow = 5;
-		grueCol = 8;
-
-		isChestOpen = false;
-		hasPlayerQuit = false;
-		isAdventureAlive = true;
-
-		lastDirection = string.Empty;
-	}
-
-	private void ShowGameStartScreen()
-	{
-	Console.Clear();
-    Console.WriteLine("============================");
-    Console.WriteLine(" Welcome to Adventure Game! ");
-    Console.WriteLine("============================");
-    Console.WriteLine("Press any key to begin...");
-    Console.ReadKey();
-	}
-
-	private void ShowScene()
-	{
-		PrintDungeonMap();
-		var r = dungeon[aRow, aCol];
-
-		if(adventurer.HasLamp() || r.IsLit())
-		{
-			Console.WriteLine(r.GetDescription());
-		}
-		else
-		{
-			Console.WriteLine("This room is pitch black!");
-		}
-	}
-
-	private void ShowInputOptions()
-	{
-		string options = ""
-		+ $"GO NORTH [{GO_NORTH}] | GO EAST [{GO_EAST}] | GET LAMP [{GET_LAMP}] | OPEN CHEST [{OPEN_CHEST}]\n"
-		+ $"GO SOUTH [{GO_SOUTH}] | GO WEST [{GO_WEST}] | GET KEY  [{GET_KEY}] | QUIT       [{QUIT}]\n"
-		+ $"> ";
-
-		Console.Write(options);
-	}
-
-	private string GetInput()
-	{
-		return Console.ReadLine()!.ToUpper();
-	}
-
-	private bool IsValidInput(string input)
-	{
-		string[] validInputs = { GO_NORTH, GO_SOUTH, GO_EAST, GO_WEST, GET_LAMP, GET_KEY, OPEN_CHEST, QUIT };
-
-		if(!validInputs.Contains(input))
-		{
-			Console.WriteLine("ERROR: Invalid input. Please try again.");
-			return false;
-		}
-
-		return true;
-	}
-
-	private void ProcessInput(string input)
-	{
-		Room r = dungeon[aRow, aCol];
-
-		if(input == GO_NORTH)
-		{
-			GoNorth(r);
-		}
-		else if(input == GO_SOUTH)
-		{
-			GoSouth(r);
-		}
-		else if(input == GO_EAST)
-		{
-			GoEast(r);
-		}
-		else if(input == GO_WEST)
-		{
-			GoWest(r);
-		}
-		else if(input == GET_LAMP)
-		{
-			GetLamp(r);
-		}
-		else if(input == GET_KEY)
-		{
-			GetKey(r);
-		}
-		else if(input == OPEN_CHEST)
-		{
-			OpenChest(r);
-		}
-		else// if(input == QUIT)
-		{
-			Quit();
-		}
-	}
-
-	private void UpdateGameState()
-	{
-	MoveGrue();
-
-    if(grueRow == aRow && grueCol == aCol)
+    public void Start()
     {
-        Console.WriteLine("The Grue catches and devours you!");
-        isAdventureAlive = false;
+        Init();
+        ShowGameStartScreen();
+
+        string input;
+        do
+        {
+            Console.Clear(); // Clears screen every step
+            ShowScene();
+
+            do
+            {
+                ShowInputOptions();
+                input = GetInput();
+            }
+            while (!IsValidInput(input));
+
+            ProcessInput(input);
+            UpdateGameState();
+        }
+        while (!IsGameOver());
+
+        ShowGameOverScreen();
     }
-    
-    if(isChestOpen && aRow != 4 && aCol != 8)
+
+    private void Init()
     {
-        Console.WriteLine("You have the treasure! Now get to the EXIT!");
+        adventurer = new Adventurer();
+        dungeon = Load("DungeonTemplate.txt");
+
+        aRow = 1;
+        aCol = 1;
+        grueRow = 1; // Grue starts far away
+        grueCol = 6;
+
+        isChestOpen = false;
+        hasPlayerQuit = false;
+        isAdventureAlive = true;
+        statusMessage = "Find the key and the chest to escape!";
+        lastDirection = string.Empty;
     }
-	}
 
-	private bool IsGameOver()
-	{
-    bool hasReachedExit = (aRow == 4 && aCol == 8); // Matches your file's exitRow/exitCol
-    bool playerWon = isChestOpen && hasReachedExit;
-
-    return playerWon || hasPlayerQuit || !isAdventureAlive;
-}
-
-	private void ShowGameOverScreen()
-	{
-		if (isChestOpen && aRow == 4 && aCol == 8)
+    private void ShowGameStartScreen()
     {
-        Console.WriteLine("CONGRATULATIONS! You escaped the dungeon with the treasure!");
+        Console.Clear();
+        Console.WriteLine("============================");
+        Console.WriteLine(" Welcome to Adventure Game! ");
+        Console.WriteLine("============================");
+        Console.WriteLine("Press any key to begin...");
+        Console.ReadKey();
     }
-    else if (!isAdventureAlive)
+
+    private void ShowScene()
     {
-        Console.WriteLine("GAME OVER: You were eaten by a Grue.");
+        PrintDungeonMap();
+        var r = dungeon[aRow, aCol];
+
+        if (adventurer.HasLamp() || r.IsLit())
+        {
+            Console.WriteLine(r.GetDescription());
+        }
+        else
+        {
+            Console.WriteLine("This room is pitch black!");
+        }
+
+        if (!string.IsNullOrEmpty(statusMessage))
+        {
+            Console.WriteLine($"\n>>> {statusMessage} <<<");
+            statusMessage = ""; 
+        }
+    }
+
+    private void ShowInputOptions()
+    {
+        Console.Write($"\nGO: {GO_NORTH}/{GO_SOUTH}/{GO_WEST}/{GO_EAST} | ACTIONS: {GET_LAMP}/{GET_KEY}/{OPEN_CHEST} | {QUIT}: Quit\n> ");
+    }
+
+    private string GetInput() => Console.ReadLine()?.ToUpper() ?? "";
+
+    private bool IsValidInput(string input)
+    {
+        string[] valid = { GO_NORTH, GO_SOUTH, GO_EAST, GO_WEST, GET_LAMP, GET_KEY, OPEN_CHEST, QUIT };
+        return valid.Contains(input);
+    }
+
+    private void ProcessInput(string input)
+    {
+        Room r = dungeon[aRow, aCol];
+        if (input == GO_NORTH) GoNorth(r);
+        else if (input == GO_SOUTH) GoSouth(r);
+        else if (input == GO_EAST) GoEast(r);
+        else if (input == GO_WEST) GoWest(r);
+        else if (input == GET_LAMP) GetLamp(r);
+        else if (input == GET_KEY) GetKey(r);
+        else if (input == OPEN_CHEST) OpenChest(r);
+        else Quit();
+    }
+
+    private void UpdateGameState()
+    {
+        MoveGrue();
+
+        if (grueRow == aRow && grueCol == aCol)
+        {
+            isAdventureAlive = false;
+        }
+
+        if (isChestOpen && (aRow != 8 || aCol != 8))
+        {
+            // If the message is empty (no collision or wall error), show objective
+            if(string.IsNullOrEmpty(statusMessage))
+                statusMessage = "THE GRUE IS AWAKE! RUN TO THE EXIT!";
+        }
+    }
+
+    private bool IsGameOver()
+    {
+        bool hasReachedExit = (aRow == 1 && aCol == 8);
+        return (isChestOpen && hasReachedExit) || hasPlayerQuit || !isAdventureAlive;
+    }
+
+    private void ShowGameOverScreen()
+    {
+        Console.Clear();
+        if (isChestOpen && aRow == 1 && aCol == 8)
+            Console.WriteLine("VICTORY: You escaped with the treasure!");
+        else if (!isAdventureAlive)
+            Console.WriteLine("FATALITY: The Grue caught you in the dark.");
+        else
+            Console.WriteLine("GAME OVER: You abandoned the quest.");
+    }
+
+    // --- Movement & Actions ---
+    private void GoNorth(Room r) { if (r.HasNorth()) aRow--; else statusMessage = "The path north is blocked."; }
+    private void GoSouth(Room r) { if (r.HasSouth()) aRow++; else statusMessage = "The path south is blocked."; }
+    private void GoEast(Room r) { if (r.HasEast()) aCol++; else statusMessage = "The path east is blocked."; }
+    private void GoWest(Room r) { if (r.HasWest()) aCol--; else statusMessage = "The path west is blocked."; }
+
+    private void GetLamp(Room r) 
+    { 
+        if (r.HasLamp()) { adventurer.SetLamp(true); r.SetLamp(false); statusMessage = "You got the lamp!"; } 
+        else statusMessage = "No lamp here."; 
+    }
+    private void GetKey(Room r) 
+    { 
+        if (r.HasKey()) { adventurer.SetKey(true); r.SetKey(false); statusMessage = "You got the key!"; } 
+        else statusMessage = "No key here."; 
+    }
+    private void OpenChest(Room r) 
+   {
+    if (r.HasChest())
+    {
+        if (adventurer.HasKey())
+        {
+            isChestOpen = true;
+            r.SetChest(false); // Remove the chest from the room so you can't open it twice
+            statusMessage = "!!! TREASURE CLAIMED !!! The ground shakes... something is coming!";
+        }
+        else
+        {
+            statusMessage = "The chest is heavy and locked. You need a key.";
+        }
     }
     else
     {
-        Console.WriteLine("You quit the game. Coward!");
-    }
-	}
-
-	private void GoNorth(Room r)
-	{
-		if(r.HasNorth())
-		{
-			aRow -= 1;
-			lastDirection = GO_SOUTH;
-		}
-		else
-		{
-			Console.WriteLine("You cannot go north!\a");
-		}
-	}
-
-	private void GoSouth(Room r)
-	{
-		if(r.HasSouth())
-		{
-			aRow += 1;
-			lastDirection = GO_NORTH;
-		}
-		else
-		{
-			Console.WriteLine("You cannot go south!\a");
-		}
-	}
-
-	private void GoEast(Room r)
-	{
-		if(r.HasEast())
-		{
-			aCol += 1;
-			lastDirection = GO_WEST;
-		}
-		else
-		{
-			Console.WriteLine("You cannot go east!\a");
-		}
-	}
-
-	private void GoWest(Room r)
-	{
-		if(r.HasWest())
-		{
-			aCol -= 1;
-			lastDirection = GO_EAST;
-		}
-		else
-		{
-			Console.WriteLine("You cannot go west!\a");
-		}
-	}
-
-	private void GetLamp(Room r)
-	{
-		if(r.HasLamp())
-		{
-			Console.WriteLine("You got the lamp!");
-			adventurer.SetLamp(true);
-			r.SetLamp(false);
-		}
-		else
-		{
-			Console.WriteLine("There is no lamp in this room.");
-		}
-	}
-
-	private void GetKey(Room r)
-	{
-		if(r.HasKey())
-		{
-			Console.WriteLine("You got the key!");
-			adventurer.SetKey(true);
-			r.SetKey(false);
-		}
-		else
-		{
-			Console.WriteLine("There is no key in this room.");
-		}
-	}
-
-	private void OpenChest(Room r)
-	{
-		if(r.HasChest())
-		{
-			if(adventurer.HasKey())
-			{
-				Console.WriteLine("You got the treasure!");
-				isChestOpen = true;
-			}
-			else
-			{
-				Console.WriteLine("You do not have the key!");
-			}
-		}
-		else
-		{
-			Console.WriteLine("There is no chest in this room.");
-		}
-	}
-
-	private void Quit()
-	{
-		Console.WriteLine("You quit the game!");
-		hasPlayerQuit = true;
-	}
-
-	//Dungeon Loader code
-	
-	public Room[,] Load(string filePath)
-	{
-		string[] lines = File.ReadAllLines("AdventureGame\\DungeonTemplate.txt");
-
-		int rows = int.Parse(lines[0]);
-		int cols = int.Parse(lines[1]);
-
-		int exitRow = int.Parse(lines[2]);
-		int exitCol = int.Parse(lines[3]);
-		int lampRow = int.Parse(lines[4]);
-		int lampCol = int.Parse(lines[5]);
-		int keyRow = int.Parse(lines[6]);
-		int keyCol = int.Parse(lines[7]);
-		int chestRow = int.Parse(lines[8]);
-		int chestCol = int.Parse(lines[9]);
-
-		// lines[10] and lines[11] are grueRow/grueCol if needed elsewhere
-		int layoutStart = 12;
-		int descriptionsStart = layoutStart + rows +1;
-
-		if (lines.Length < descriptionsStart)
-			throw new FormatException("File does not contain enough layout rows.");
-
-		Room[,] dungeon = new Room[rows, cols];
-		List<(int row, int col)> traversableTiles = new();
-
-		for (int row = 0; row < rows; row++)
-		{
-			string layoutLine = lines[layoutStart + row];
-
-			if (layoutLine.Length != cols)
-				throw new FormatException($"Layout row {row} must contain exactly {cols} characters.");
-
-			for (int col = 0; col < cols; col++)
-			{
-				if (layoutLine[col] != Wall)
-				{
-					dungeon[row, col] = new Room();
-					traversableTiles.Add((row, col));
-				}
-			}
-		}
-
-		int descriptionCount = lines.Length - descriptionsStart;
-
-		if (descriptionCount != traversableTiles.Count)
-		{
-			throw new FormatException(
-					$"Description count ({descriptionCount}) must match traversable tile count ({traversableTiles.Count})."
-			);
-		}
-
-		for (int i = 0; i < traversableTiles.Count; i++)
-		{
-			string[] parts = lines[descriptionsStart + i].Split('|', 2);
-			Console.WriteLine(lines[descriptionsStart + i]);
-				if (parts.Length != 2)
-					throw new FormatException($"Invalid room description line: {lines[descriptionsStart + i]}");
-
-			bool isLit = parts[0] switch
-			{
-				"1" => true,
-				"0" => false,
-				_ => throw new FormatException("Room lit value must be 1 or 0.")
-			};
-
-			string description = parts[1];
-
-			var (row, col) = traversableTiles[i];
-			Room room = dungeon[row, col];
-
-			room.SetLit(isLit);
-			room.SetDescription(description);
-
-			room.SetLamp(row == lampRow && col == lampCol);
-			room.SetKey(row == keyRow && col == keyCol);
-			room.SetChest(row == chestRow && col == chestCol);
-
-			room.SetNorth(IsTraversable(dungeon, row - 1, col));
-			room.SetSouth(IsTraversable(dungeon, row + 1, col));
-			room.SetEast(IsTraversable(dungeon, row, col + 1));
-			room.SetWest(IsTraversable(dungeon, row, col - 1));
-		}
-
-		ValidateTraversableTile(dungeon, exitRow, exitCol, "exit");
-
-		return dungeon;
-	}
-
-	private bool IsTraversable(Room[,] dungeon, int row, int col)
-	{
-		return row >= 0 &&
-					 row < dungeon.GetLength(0) &&
-					 col >= 0 &&
-					 col < dungeon.GetLength(1) &&
-					 dungeon[row, col] != null;
-	}
-
-	private void ValidateTraversableTile(Room[,] dungeon, int row, int col, string name)
-	{
-		if (!IsTraversable(dungeon, row, col))
-			throw new FormatException($"The {name} position must be on a traversable tile.");
-	}
-
-	//This is the A* method. It's used for controlling the movement of the grue.
-
-	private void MoveGrue()
-{
-    (int row, int col) start = (grueRow, grueCol);
-    (int row, int col) goal = (aRow, aCol);
-
-    PriorityQueue<(int row, int col), int> openSet = new();
-
-    Dictionary<(int, int), (int, int)> cameFrom = new();
-
-    Dictionary<(int, int), int> gScore = new();
-    Dictionary<(int, int), int> fScore = new();
-
-    gScore[start] = 0;
-    fScore[start] = Heuristic(start, goal);
-
-    openSet.Enqueue(start, fScore[start]);
-
-    int[] dRows = { -1, 1, 0, 0 };
-    int[] dCols = { 0, 0, -1, 1 };
-
-    while(openSet.Count > 0)
-    {
-        var current = openSet.Dequeue();
-
-        if(current == goal)
-        {
-            ReconstructPath(cameFrom, current);
-            return;
-        }
-
-        for(int i = 0; i < 4; i++)
-        {
-            int newRow = current.row + dRows[i];
-            int newCol = current.col + dCols[i];
-
-            bool valid =
-                newRow >= 0 &&
-                newRow < dungeon.GetLength(0) &&
-                newCol >= 0 &&
-                newCol < dungeon.GetLength(1) &&
-                dungeon[newRow, newCol] != null;
-
-            if(!valid)
-                continue;
-
-            var neighbor = (newRow, newCol);
-
-            int tentativeGScore = gScore[current] + 1;
-
-            if(!gScore.ContainsKey(neighbor) || tentativeGScore < gScore[neighbor])
-            {
-                cameFrom[neighbor] = current;
-
-                gScore[neighbor] = tentativeGScore;
-
-                fScore[neighbor] =
-                    tentativeGScore + Heuristic(neighbor, goal);
-
-                openSet.Enqueue(neighbor, fScore[neighbor]);
-            }
-        }
+        statusMessage = "There is no chest here.";
     }
 }
-private int Heuristic((int row, int col) a, (int row, int col) b)
-{
-    return Math.Abs(a.row - b.row)
-         + Math.Abs(a.col - b.col);
-}
-private void ReconstructPath(
-    Dictionary<(int, int), (int, int)> cameFrom,
-    (int row, int col) current)
-{
-    List<(int row, int col)> path = new();
 
-    path.Add(current);
+    private void Quit() { hasPlayerQuit = true; }
 
-    while(cameFrom.ContainsKey(current))
+    // --- Loading & Map ---
+    public Room[,] Load(string filePath)
     {
-        current = cameFrom[current];
-        path.Add(current);
-    }
+        // Note: Used relative path to avoid local machine errors
+        string[] lines = File.ReadAllLines("AdventureGame\\" + filePath);
 
-    path.Reverse();
+        int rows = int.Parse(lines[0]);
+        int cols = int.Parse(lines[1]);
+        int lampRow = int.Parse(lines[4]), lampCol = int.Parse(lines[5]);
+        int keyRow = int.Parse(lines[6]), keyCol = int.Parse(lines[7]);
+        int chestRow = int.Parse(lines[8]), chestCol = int.Parse(lines[9]);
 
-    if(path.Count > 1)
-    {
-        grueRow = path[1].row;
-        grueCol = path[1].col;
-    }
-}
-//Shows Dungeon map
-private void PrintDungeonMap()
-{
-    for(int row = 0; row < dungeon.GetLength(0); row++)
-    {
-        for(int col = 0; col < dungeon.GetLength(1); col++)
+        int layoutStart = 12;
+        Room[,] dungeon = new Room[rows, cols];
+        List<(int row, int col)> traversableTiles = new();
+
+        for (int row = 0; row < rows; row++)
         {
-            if(aRow == row && aCol == col)
+            string layoutLine = lines[layoutStart + row];
+            for (int col = 0; col < cols; col++)
             {
-                Console.Write('P');
-            }
-            else if(grueRow == row && grueCol == col)
-            {
-                Console.Write('G');
-            }
-            else if(dungeon[row, col] == null)
-            {
-                Console.Write('#');
-            }
-            else if(dungeon[row, col].HasLamp())
-            {
-                Console.Write('L');
-            }
-            else if(dungeon[row, col].HasKey())
-            {
-                Console.Write('K');
-            }
-            else if(dungeon[row, col].HasChest())
-            {
-                Console.Write('C');
-            }
-			else if(row == 4 && col == 8)
-			{
-    		Console.Write('E');
-			}
-            else
-            {
-                Console.Write('.');
+                if (layoutLine[col] != Wall)
+                {
+                    dungeon[row, col] = new Room();
+                    traversableTiles.Add((row, col));
+                }
             }
         }
 
-        Console.WriteLine();
+        int descriptionsStart = layoutStart + rows + 1;
+        for (int i = 0; i < traversableTiles.Count; i++)
+        {
+            string[] parts = lines[descriptionsStart + i].Split('|', 2);
+            var (row, col) = traversableTiles[i];
+            Room room = dungeon[row, col];
+            room.SetLit(parts[0] == "1");
+            room.SetDescription(parts[1]);
+            room.SetLamp(row == lampRow && col == lampCol);
+            room.SetKey(row == keyRow && col == keyCol);
+            room.SetChest(row == chestRow && col == chestCol);
+            room.SetNorth(IsTraversable(dungeon, row - 1, col));
+            room.SetSouth(IsTraversable(dungeon, row + 1, col));
+            room.SetEast(IsTraversable(dungeon, row, col + 1));
+            room.SetWest(IsTraversable(dungeon, row, col - 1));
+        }
+        return dungeon;
     }
-}
+
+    private bool IsTraversable(Room[,] d, int r, int c) => r >= 0 && r < d.GetLength(0) && c >= 0 && c < d.GetLength(1) && d[r, c] != null;
+
+    // --- Grue A* Pathfinding ---
+    private void MoveGrue()
+    {
+        if (!isChestOpen) return; // Grue only moves when chest is open
+
+        (int row, int col) start = (grueRow, grueCol);
+        (int row, int col) goal = (aRow, aCol);
+        PriorityQueue<(int row, int col), int> openSet = new();
+        Dictionary<(int, int), (int, int)> cameFrom = new();
+        Dictionary<(int, int), int> gScore = new() { [start] = 0 };
+        openSet.Enqueue(start, Heuristic(start, goal));
+
+        while (openSet.Count > 0)
+        {
+            var current = openSet.Dequeue();
+            if (current == goal) { ReconstructPath(cameFrom, current); return; }
+
+            int[] dr = { -1, 1, 0, 0 };
+            int[] dc = { 0, 0, -1, 1 };
+
+            for (int i = 0; i < 4; i++)
+            {
+                int nr = current.row + dr[i], nc = current.col + dc[i];
+                if (IsTraversable(dungeon, nr, nc))
+                {
+                    var neighbor = (nr, nc);
+                    int tentG = gScore[current] + 1;
+                    if (!gScore.ContainsKey(neighbor) || tentG < gScore[neighbor])
+                    {
+                        cameFrom[neighbor] = current;
+                        gScore[neighbor] = tentG;
+                        openSet.Enqueue(neighbor, tentG + Heuristic(neighbor, goal));
+                    }
+                }
+            }
+        }
+    }
+
+    private int Heuristic((int row, int col) a, (int row, int col) b) => Math.Abs(a.row - b.row) + Math.Abs(a.col - b.col);
+
+    private void ReconstructPath(Dictionary<(int, int), (int, int)> cameFrom, (int row, int col) current)
+    {
+        List<(int row, int col)> path = new() { current };
+        while (cameFrom.ContainsKey(current)) { current = cameFrom[current]; path.Add(current); }
+        path.Reverse();
+        if (path.Count > 1) { grueRow = path[1].row; grueCol = path[1].col; }
+    }
+
+    private void PrintDungeonMap()
+    {
+        for (int row = 0; row < dungeon.GetLength(0); row++)
+        {
+            for (int col = 0; col < dungeon.GetLength(1); col++)
+            {
+                if (aRow == row && aCol == col) Console.Write('P');
+                else if (grueRow == row && grueCol == col) Console.Write('G');
+                else if (dungeon[row, col] == null) Console.Write('#');
+                else if (dungeon[row, col].HasLamp()) Console.Write('L');
+                else if (dungeon[row, col].HasKey()) Console.Write('K');
+                else if (dungeon[row, col].HasChest()) Console.Write('C');
+                else if (row == 1 && col == 8) Console.Write('E');
+                else Console.Write('.');
+            }
+            Console.WriteLine();
+        }
+    }
 }
