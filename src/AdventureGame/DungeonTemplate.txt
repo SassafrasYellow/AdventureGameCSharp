@@ -1,0 +1,69 @@
+10
+10
+1
+8
+1
+1
+2
+1
+7
+8
+1
+6
+##########
+#        #
+# ###### #
+# #    # #
+# #    # #
+# #    # #
+# ###### #
+#        #
+#       E#
+##########
+1|The entrance is cold and foreboding.
+1|The air smells of ancient dust.
+1|Your footsteps echo loudly here.
+1|Water drips from a crack in the ceiling.
+1|The stone walls are smooth to the touch.
+1|A faint breeze whistles through the dark.
+1|Shadows dance at the edge of your vision.
+1|The floor is slick with moisture.
+1|You see the faint glint of something in the corner.
+1|The silence here is heavy and oppressive.
+1|A sense of dread washes over you.
+1|The ceiling seems to dip lower here.
+1|Old bones crunch beneath your boots.
+1|Faint scratches mark the floor.
+1|You hear a distant, low growl.
+1|The air feels thick and hard to breathe.
+1|A rusted iron ring hangs from the wall.
+1|The path ahead is shrouded in mist.
+1|Your pulse quickens in the quiet.
+1|A strange blue fungus grows on the stones.
+1|The smell of rot is faint but present.
+1|Something small scurries away in the dark.
+1|The wind howls through a narrow gap.
+1|You feel a sudden chill down your spine.
+1|The darkness feels almost physical here.
+1|Ancient runes are carved into the archway.
+1|A broken shield lies discarded on the floor.
+1|The ground slopes gently upward.
+1|You feel a strange vibration in the air.
+1|The light from your lamp flickers nervously.
+1|The corridor turns sharply to the left.
+1|The walls are covered in thick cobwebs.
+1|You hear the sound of stone grinding on stone.
+1|A cold sweat breaks out on your brow.
+1|The path opens up into a wider gallery.
+1|You find a small, empty alcove.
+1|The air grows stagnant and warm.
+1|A heavy door once stood in this frame.
+1|The floor stones are loose and wobbly.
+1|You catch a glimpse of a moving shadow.
+1|The exit feels tantalizingly close.
+1|You are standing right before the exit portal.
+1|The heavy scent of damp earth fills the air.
+1|One final step before freedom.
+1|A narrow crack in the wall reveals a hidden pocket of air.
+1|The dust on the ground shows signs of a recent struggle.
+1|You can almost see the exit light from here.
